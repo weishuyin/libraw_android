@@ -29,9 +29,10 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PREVIEW_CODE = 1;
-    private static final int TO_JPG_CODE = 2;
-    private static final int TO_THUMBNAIL_CODE = 3;
-    private static final int REQUEST_PERMISSION_CODE = 4;
+    private static final int TO_DNG_CODE = 2;
+    private static final int TO_JPG_CODE = 3;
+    private static final int TO_THUMBNAIL_CODE = 4;
+    private static final int REQUEST_PERMISSION_CODE = 5;
 
     private static final String IMAGE_SUB_PATH = "/libraw";
     private static final String CACHE_FILENAME = "file.cache";
@@ -40,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String DECODE_RAW_FAILED = "decode raw failed";
     private static final String DECODE_THUMBNAIL_FAILED = "decode thumbnail failed";
 
-    Button preview, toJpg, toThumbnail;
+    Button preview, toDng, toJpg, toThumbnail;
     private ImageView imageView;
 
     @Override
@@ -51,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         requestPermissions();
 
         preview = findViewById(R.id.preview);
+        toDng = findViewById(R.id.toDng);
         toJpg = findViewById(R.id.toJpg);
         toThumbnail = findViewById(R.id.toThumbnail);
         imageView = findViewById(R.id.imageView);
@@ -59,6 +61,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 openFiles(false, PREVIEW_CODE);
+            }
+        });
+
+        toDng.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openFiles(true, TO_DNG_CODE);
             }
         });
 
@@ -79,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setButtonsEnable(boolean enable) {
         preview.setEnabled(enable);
+        toDng.setEnabled(enable);
         toJpg.setEnabled(enable);
         toThumbnail.setEnabled(enable);
     }
@@ -128,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                     // doPreview(uri); // very slow
                     doPreviewThumbnail(uri);
                     break;
+                case TO_DNG_CODE:
                 case TO_JPG_CODE:
                 case TO_THUMBNAIL_CODE:
                     Uri[] uris;
@@ -139,7 +150,11 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         uris = new Uri[]{data.getData()};
                     }
-                    doToJpgOrThumbnail(uris, requestCode == TO_JPG_CODE);
+                    if (requestCode == TO_DNG_CODE) {
+                        doToDng(uris);
+                    } else {
+                        doToJpgOrThumbnail(uris, requestCode == TO_JPG_CODE);
+                    }
                     break;
                 default:
                     break;
@@ -247,6 +262,35 @@ public class MainActivity extends AppCompatActivity {
                         setButtonsEnable(true);
                     }
                 });
+            }
+        }.start();
+    }
+
+    private void doToDng(final Uri[] uris) {
+        new Thread() {
+            @Override
+            public void run() {
+                setButtonsEnableOnUiThread(false);
+                for (int i = 0; i < uris.length; i++) {
+                    uriToFile(uris[i], CACHE_FILENAME);
+                    String cache = getFileStreamPath(CACHE_FILENAME).getAbsolutePath();
+
+                    DateFormat format = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+                    String filename = format.format(new Date()) + ".dng";
+
+                    String storePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath() + IMAGE_SUB_PATH;
+                    File appDir = new File(storePath);
+                    if (!appDir.exists()) {
+                        appDir.mkdirs();
+                    }
+
+                    File file = new File(appDir, filename);
+                    Raw2dng.raw2dng(cache, file.getAbsolutePath());
+                    Uri uri = Uri.fromFile(file);
+                    sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
+                }
+                showToastOnUiThread(SUCCESS, Toast.LENGTH_SHORT);
+                setButtonsEnableOnUiThread(true);
             }
         }.start();
     }

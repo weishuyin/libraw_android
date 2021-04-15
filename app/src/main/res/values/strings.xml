@@ -1,6 +1,7 @@
 <resources tools:ignore="ExtraTranslation" xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">libraw</string>
     <string name="previewText">preview</string>
+    <string name="toDngText">toDng</string>
     <string name="toJpgText">toJpg</string>
     <string name="thumbnailText">toThumbnail</string>
 </resources>

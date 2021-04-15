@@ -1,6 +1,7 @@
 <resources tools:ignore="ExtraTranslation" xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">libraw</string>
     <string name="previewText">预览</string>
+    <string name="toDngText">转为DNG</string>
     <string name="toJpgText">转为JPG</string>
     <string name="thumbnailText">提取缩略图</string>
 </resources>
